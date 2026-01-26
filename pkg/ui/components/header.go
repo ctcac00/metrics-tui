@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ctcac00/monitor-tui/internal/data"
@@ -69,24 +68,4 @@ func (h *Header) Render(systemData *data.SystemData) string {
 	}
 
 	return h.headerStyle.Width(h.width).Render(content)
-}
-
-// formatUptime formats seconds into human-readable uptime
-func formatUptime(seconds uint64) string {
-	d := time.Duration(seconds) * time.Second
-	d = d.Round(time.Second)
-
-	days := d / (24 * time.Hour)
-	d -= days * 24 * time.Hour
-	hours := d / time.Hour
-	d -= hours * time.Hour
-	minutes := d / time.Minute
-
-	if days > 0 {
-		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
-	}
-	if hours > 0 {
-		return fmt.Sprintf("%dh %dm", hours, minutes)
-	}
-	return fmt.Sprintf("%dm", minutes)
 }

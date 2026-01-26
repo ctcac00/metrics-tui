@@ -1,0 +1,70 @@
+# Monitor TUI Configuration File
+# Location: ~/.config/monitor-tui/config.yaml
+
+# Refresh intervals for each data collector
+refresh:
+  # Global default interval (can be overridden by specific settings)
+  interval: 2s
+
+  # Individual collector intervals
+  cpu: 1s          # CPU metrics (per-core and total usage)
+  memory: 2s       # Memory and swap usage
+  disk: 5s         # Disk partition usage and I/O stats
+  network: 2s      # Network interface statistics
+  sensors: 5s      # Temperature and sensor readings
+  host: 5s         # Host info (uptime, load average, etc.)
+
+# Display and visual settings
+display:
+  # Color theme: auto, dark, or light
+  theme: auto
+
+  # Show sparkline graphs for historical data
+  show_graphs: true
+
+  # Show percentage values alongside metrics
+  show_percentages: true
+
+  # Number of decimal places for floating-point values (0-3)
+  precision: 1
+
+  # Unit system: auto, binary (KiB, MiB), or decimal (KB, MB)
+  units: auto
+
+# Alert thresholds for color-coding
+thresholds:
+  # CPU usage thresholds (percentage)
+  cpu_warning: 70      # Orange color above this level
+  cpu_critical: 90     # Red/bold color above this level
+
+  # Memory usage thresholds (percentage)
+  memory_warning: 80
+  memory_critical: 95
+
+  # Temperature thresholds (Celsius)
+  temp_warning: 70     # Orange color above this level
+  temp_critical: 85    # Red/bold color above this level
+
+# UI-specific settings
+ui:
+  # Number of data points to keep for sparkline history
+  page_size: 50
+
+  # Header display options
+  show_load_average: true   # Show 1/5/15 min load averages
+  show_uptime: true         # Show system uptime
+  show_hostname: true       # Show system hostname
+
+# Enable debug logging
+debug: false
+
+# Environment Variables:
+# You can override any setting using environment variables with the MONITOR_ prefix.
+# Nested values use underscores (e.g., refresh.cpu becomes MONITOR_REFRESH_CPU).
+#
+# Examples:
+#   MONITOR_REFRESH_INTERVAL=5s
+#   MONITOR_REFRESH_CPU=2s
+#   MONITOR_DISPLAY_THEME=dark
+#   MONITOR_THRESHOLDS_CPU_WARNING=80
+#   MONITOR_DEBUG=true

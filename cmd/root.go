@@ -9,12 +9,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ctcac00/monitor-tui/internal/data"
 	"github.com/ctcac00/monitor-tui/pkg/collectors"
+	"github.com/ctcac00/monitor-tui/pkg/config"
 	"github.com/ctcac00/monitor-tui/pkg/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
+var appConfig *config.Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -25,6 +27,14 @@ disk, network, temperatures, and more in a terminal-based dashboard.
 
 Built with Bubble Tea for a beautiful, responsive TUI experience.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Load configuration
+		var err error
+		appConfig, err = config.Load()
+		if err != nil {
+			cmd.Printf("Error loading config: %v\n", err)
+			os.Exit(1)
+		}
+
 		debug := viper.GetBool("debug")
 		listDisks := viper.GetBool("list-disks")
 
@@ -63,23 +73,27 @@ func init() {
 	rootCmd.PersistentFlags().StringP("refresh", "r", "2s", "Override refresh interval")
 
 	// Flag: theme
-	rootCmd.PersistentFlags().String("theme", "", "Force theme (dark/light)")
+	rootCmd.PersistentFlags().String("theme", "auto", "Color theme (auto|dark|light)")
 
 	// Flag: no-graphs
 	rootCmd.PersistentFlags().Bool("no-graphs", false, "Disable sparklines")
 
+	// Flag: list disks
+	rootCmd.PersistentFlags().Bool("list-disks", false, "Show available disks and exit")
+
 	// Flag: debug
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Enable debug logging")
 
-	// Flag: list disks
-	rootCmd.PersistentFlags().Bool("list-disks", false, "Show available disks and exit")
+	// Flag: precision
+	rootCmd.PersistentFlags().IntP("precision", "p", 1, "Decimal places for values (0-3)")
 
 	// Bind flags to viper
 	viper.BindPFlag("refresh", rootCmd.PersistentFlags().Lookup("refresh"))
 	viper.BindPFlag("theme", rootCmd.PersistentFlags().Lookup("theme"))
-	viper.BindPFlag("no-graphs", rootCmd.PersistentFlags().Lookup("no-graphs"))
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("display.no_graphs", rootCmd.PersistentFlags().Lookup("no-graphs"))
 	viper.BindPFlag("list-disks", rootCmd.PersistentFlags().Lookup("list-disks"))
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("display.precision", rootCmd.PersistentFlags().Lookup("precision"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -92,8 +106,8 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".monitor-tui" (without extension)
-		viper.AddConfigPath(home + "/.config/monitor-tui")
+		// Search config in home directory
+		viper.AddConfigPath(home+"/.config/monitor-tui")
 		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")
@@ -221,8 +235,17 @@ func testCollectors(cmd *cobra.Command) {
 	cmd.Println("\n=== Testing Aggregator ===\n")
 
 	// Test aggregator
-	config := collectors.DefaultAggregatorConfig()
-	aggregator := collectors.NewAggregator(config)
+	aggConfig := &collectors.AggregatorConfig{
+		CPUInterval:          1,
+		MemoryInterval:       1,
+		DiskInterval:         1,
+		NetworkInterval:      1,
+		SensorsInterval:      1,
+		HostInterval:         1,
+		DiskIncludeAll:       true,
+		NetworkExcludeVirtual: true,
+	}
+	aggregator := collectors.NewAggregator(aggConfig)
 
 	// Set up a callback to receive data
 	done := make(chan bool)
