@@ -6,8 +6,10 @@ import (
 	"os"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ctcac00/monitor-tui/internal/data"
 	"github.com/ctcac00/monitor-tui/pkg/collectors"
+	"github.com/ctcac00/monitor-tui/pkg/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,10 +33,17 @@ Built with Bubble Tea for a beautiful, responsive TUI experience.`,
 			return
 		}
 
-		// TUI will be implemented in Phase 3
-		cmd.Println("monitor-tui TUI will be implemented in Phase 3")
 		if debug {
 			testCollectors(cmd)
+			return
+		}
+
+		// Launch the TUI
+		model := ui.NewModel()
+		p := tea.NewProgram(model, tea.WithAltScreen())
+		if _, err := p.Run(); err != nil {
+			cmd.Printf("Error running TUI: %v\n", err)
+			os.Exit(1)
 		}
 	},
 }
