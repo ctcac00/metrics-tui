@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"fmt"
+	"math"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ctcac00/monitor-tui/internal/data"
@@ -49,17 +51,34 @@ func (t *TemperatureMetrics) Render(systemData *data.SystemData) string {
 	}
 
 	sensors := systemData.Sensors
-	var content string
+	var content strings.Builder
 
 	// Title
-	content += lipgloss.NewStyle().Foreground(lipgloss.Color("#bd93f9")).Bold(true).Render("Temperatures")
-	content += "\n\n"
+	content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#bd93f9")).Bold(true).Render("Temperatures"))
+	content.WriteString("\n\n")
+
+	// Display fan speeds first with visual gauge (always visible if available)
+	if len(sensors.Fans) > 0 {
+		content.WriteString(t.label.Render("Fan Speeds"))
+		content.WriteString("\n")
+		for _, fan := range sensors.Fans {
+			// Estimate max RPM for gauge (typically ~2000-3000 for case fans, GPU can be higher)
+			maxRPM := estimateMaxFanRPM(fan.Name, fan.RPM)
+			gauge := renderGauge(float64(fan.RPM), maxRPM, 20, t.normal, t.warning)
+			content.WriteString(fmt.Sprintf("  %s\n    %s%d RPM\n",
+				fan.Name,
+				gauge,
+				fan.RPM,
+			))
+		}
+		content.WriteString("\n")
+	}
 
 	if len(sensors.Temperatures) == 0 {
 		return t.muted.Render("No temperature sensors found")
 	}
 
-	// Group temperatures by sensor type
+	// Group temperatures by sensor type and select representative temps
 	tempGroups := make(map[string][]TempEntry)
 	for _, temp := range sensors.Temperatures {
 		sensorType := extractSensorType(temp.SensorKey)
@@ -70,44 +89,109 @@ func (t *TemperatureMetrics) Render(systemData *data.SystemData) string {
 		})
 	}
 
-	// Display temperatures grouped by sensor type (limit to first few)
-	count := 0
-	maxTemps := 20 // Limit display
+	// Display temperatures with visual gauges
 	for sensorType, temps := range tempGroups {
-		if count >= maxTemps {
-			break
-		}
-
-		content += t.label.Render(sensorType)
-		content += "\n"
-
-		for _, temp := range temps {
-			if count >= maxTemps {
-				break
+		// For coretemp and amdgpu, only show the highest (package) temp
+		if sensorType == "coretemp" || sensorType == "amdgpu" {
+			content.WriteString(t.renderSummaryTemp(sensorType, temps))
+		} else {
+			// For other sensors, show all individually
+			content.WriteString(t.label.Render(sensorType))
+			content.WriteString("\n")
+			for _, temp := range temps {
+				content.WriteString(t.renderTempGauge(temp))
 			}
-			count++
-
-			tempStyle := t.getMetricStyle(temp.Temp, 70, 85)
-			content += fmt.Sprintf("  %s: %s%.1f°C%s",
-				temp.Key,
-				tempStyle,
-				temp.Temp,
-				t.value,
-			)
-
-			if temp.Critical != 0 {
-				content += t.muted.Render(fmt.Sprintf(" (critical: %.0f°C)", temp.Critical))
-			}
-			content += "\n"
+			content.WriteString("\n")
 		}
-		content += "\n"
 	}
 
-	if len(sensors.Temperatures) > maxTemps {
-		content += t.muted.Render(fmt.Sprintf("... and %d more sensors\n", len(sensors.Temperatures)-maxTemps))
+	return content.String()
+}
+
+// renderSummaryTemp shows only the max temperature for a sensor type
+func (t *TemperatureMetrics) renderSummaryTemp(sensorType string, temps []TempEntry) string {
+	if len(temps) == 0 {
+		return ""
 	}
 
-	return content
+	// Find the highest temperature (usually the package temp)
+	maxTemp := temps[0]
+	for _, temp := range temps[1:] {
+		if temp.Temp > maxTemp.Temp {
+			maxTemp = temp
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString(t.label.Render(sensorType))
+	sb.WriteString("\n")
+	sb.WriteString(t.renderTempGauge(maxTemp))
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+// renderTempGauge renders a temperature with visual gauge
+func (t *TemperatureMetrics) renderTempGauge(temp TempEntry) string {
+	tempStyle := t.getMetricStyle(temp.Temp, 70, 85)
+
+	// Temperature gauge: 0-100°C range
+	gauge := renderGauge(temp.Temp, 100, 20, t.normal, tempStyle)
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("  %s\n    %s%.1f°C",
+		temp.Key,
+		gauge,
+		temp.Temp,
+	))
+
+	if temp.Critical != 0 {
+		sb.WriteString(t.muted.Render(fmt.Sprintf(" (crit: %.0f°C)", temp.Critical)))
+	}
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+// renderGauge creates a horizontal bar gauge
+func renderGauge(value, max float64, width int, normalStyle, fillStyle lipgloss.Style) string {
+	if max == 0 {
+		max = 1
+	}
+
+	percent := value / max
+	if percent > 1 {
+		percent = 1
+	}
+
+	filledWidth := int(math.Round(float64(width) * percent))
+	if filledWidth > width {
+		filledWidth = width
+	}
+
+	filled := strings.Repeat("█", filledWidth)
+	empty := strings.Repeat("░", width-filledWidth)
+
+	return fillStyle.Render(filled) + normalStyle.Render(empty)
+}
+
+// estimateMaxFanRPM estimates the maximum RPM for a fan based on its name
+func estimateMaxFanRPM(name string, currentRPM uint64) float64 {
+	name = strings.ToLower(name)
+
+	// GPU fans typically spin faster
+	if strings.Contains(name, "gpu") || strings.Contains(name, "amdgpu") || strings.Contains(name, "nvidia") {
+		return 3500
+	}
+
+	// CPU fans
+	if strings.Contains(name, "cpu") || strings.Contains(name, "coretemp") {
+		return 2500
+	}
+
+	// Default for case fans
+	if currentRPM > 2000 {
+		return float64(currentRPM) * 1.2
+	}
+	return 2000
 }
 
 // TempEntry holds temperature info for display

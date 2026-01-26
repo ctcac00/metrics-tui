@@ -74,9 +74,16 @@ type NetworkMetrics struct {
 	LastUpdate time.Time
 }
 
-// SensorMetrics holds sensor data (temperatures)
+// FanStat holds fan speed data
+type FanStat struct {
+	Name string
+	RPM  uint64
+}
+
+// SensorMetrics holds sensor data (temperatures and fans)
 type SensorMetrics struct {
 	Temperatures []sensors.TemperatureStat
+	Fans         []FanStat
 	LastUpdate   time.Time
 }
 

@@ -226,8 +226,17 @@ func convertSensorMetrics(m *SensorMetrics) *data.SensorMetrics {
 	if m == nil {
 		return nil
 	}
+	// Convert Fans from collectors.FanStat to data.FanStat
+	fans := make([]data.FanStat, len(m.Fans))
+	for i, fan := range m.Fans {
+		fans[i] = data.FanStat{
+			Name: fan.Name,
+			RPM:  fan.RPM,
+		}
+	}
 	return &data.SensorMetrics{
 		Temperatures: m.Temperatures,
+		Fans:         fans,
 		LastUpdate:   m.LastUpdate,
 	}
 }
