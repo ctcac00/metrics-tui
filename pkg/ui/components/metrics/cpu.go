@@ -2,9 +2,11 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ctcac00/monitor-tui/internal/data"
+	"github.com/ctcac00/monitor-tui/pkg/ui/components"
 )
 
 // CPUMetrics renders CPU metrics
@@ -17,6 +19,8 @@ type CPUMetrics struct {
 	warning      lipgloss.Style
 	critical     lipgloss.Style
 	width        int
+	progressBar  *components.ProgressBar
+	sparkline    *components.SparkLine
 }
 
 // NewCPUMetrics creates a new CPU metrics renderer
@@ -37,12 +41,21 @@ func NewCPUMetrics() *CPUMetrics {
 		normal:       lipgloss.NewStyle().Foreground(colorGreen),
 		warning:      lipgloss.NewStyle().Foreground(colorOrange),
 		critical:     lipgloss.NewStyle().Foreground(colorRed).Bold(true),
+		progressBar:  components.NewProgressBar(),
+		sparkline:    components.NewSparkLine(),
 	}
 }
 
 // SetWidth sets the render width
 func (c *CPUMetrics) SetWidth(w int) {
 	c.width = w
+	c.progressBar.SetWidth(30)
+	c.sparkline.SetWidth(w - 20)
+}
+
+// SetHistory sets the historical data for sparklines
+func (c *CPUMetrics) SetHistory(data []float64) {
+	c.sparkline.SetData(data)
 }
 
 // Render returns the rendered CPU metrics
@@ -52,47 +65,64 @@ func (c *CPUMetrics) Render(systemData *data.SystemData) string {
 	}
 
 	cpu := systemData.CPU
-	var content string
+	var b strings.Builder
 
 	// Title
-	content += c.sectionTitle.Render("CPU Usage")
-	content += "\n\n"
+	b.WriteString(c.sectionTitle.Render("CPU Usage"))
+	b.WriteString("\n\n")
 
-	// Total usage
+	// Total usage with progress bar
 	totalStyle := c.getMetricStyle(cpu.Total, 70, 90)
-	content += fmt.Sprintf("Total: %s%.1f%%%s\n",
+	b.WriteString(fmt.Sprintf("Total: %s%.1f%%%s\n",
 		totalStyle,
 		cpu.Total,
 		c.value,
-	)
+	))
+
+	// Progress bar for total usage
+	c.progressBar.SetWidth(30)
+	b.WriteString(c.progressBar.RenderDynamic(cpu.Total, 70, 90))
+	b.WriteString("\n\n")
+
+	// Sparkline for CPU history
+	if c.sparkline.GetLastValue() > 0 {
+		b.WriteString(c.label.Render("History:"))
+		b.WriteString(" ")
+		b.WriteString(fmt.Sprintf("%.1f%% ", c.sparkline.GetLastValue()))
+		b.WriteString(c.sparkline.RenderWithColor(70, 90))
+		b.WriteString("\n\n")
+	}
 
 	// Core count
-	content += c.muted.Render(fmt.Sprintf("Cores: %d", cpu.CoreCount))
-	content += "\n\n"
+	b.WriteString(c.muted.Render(fmt.Sprintf("Cores: %d", cpu.CoreCount)))
+	b.WriteString("\n\n")
 
-	// Per-core usage
+	// Per-core usage with progress bars
 	if len(cpu.Usage) > 0 {
-		content += c.label.Render("Per-Core Usage:")
-		content += "\n"
+		b.WriteString(c.label.Render("Per-Core Usage:"))
+		b.WriteString("\n")
 
-		coresPerRow := 4
+		coresPerRow := 2
 		for i, usage := range cpu.Usage {
 			if i > 0 && i%coresPerRow == 0 {
-				content += "\n"
+				b.WriteString("\n")
 			}
 
 			coreStyle := c.getMetricStyle(usage, 70, 90)
-			content += fmt.Sprintf("%sCore %2d:%s %5.1f%%  ",
+			c.progressBar.SetWidth(15)
+			bar := c.progressBar.RenderDynamic(usage, 70, 90)
+
+			b.WriteString(fmt.Sprintf("%sCore %2d:%s %5.1f%% %s\n",
 				c.muted,
 				i,
 				coreStyle,
 				usage,
-			)
+				bar,
+			))
 		}
-		content += "\n"
 	}
 
-	return content
+	return b.String()
 }
 
 func (c *CPUMetrics) getMetricStyle(value float64, warning, critical float64) lipgloss.Style {

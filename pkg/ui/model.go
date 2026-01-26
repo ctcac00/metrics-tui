@@ -162,6 +162,12 @@ func (m *Model) View() string {
 
 // renderMainContent renders the main content area based on active tab
 func (m *Model) renderMainContent() string {
+	// Update history data for sparklines
+	if m.history != nil {
+		m.cpuMetrics.SetHistory(m.history.CPU)
+		m.memoryMetrics.SetHistory(m.history.Memory)
+	}
+
 	switch m.activeTab {
 	case 0:
 		return m.cpuMetrics.Render(m.systemData)
