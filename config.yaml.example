@@ -1,5 +1,5 @@
-# Monitor TUI Configuration File
-# Location: ~/.config/monitor-tui/config.yaml
+# Metrics TUI Configuration File
+# Location: ~/.config/metrics-tui/config.yaml
 
 # Refresh intervals for each data collector
 refresh:

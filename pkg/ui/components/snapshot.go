@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ctcac00/monitor-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/internal/data"
 )
 
 // Snapshot represents a system state snapshot

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ctcac00/monitor-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/internal/data"
 )
 
 // Aggregator manages multiple collectors and aggregates their data

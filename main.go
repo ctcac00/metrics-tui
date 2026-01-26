@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ctcac00/monitor-tui/cmd"
+	"github.com/ctcac00/metrics-tui/cmd"
 )
 
 func main() {

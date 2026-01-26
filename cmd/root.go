@@ -7,10 +7,10 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/ctcac00/monitor-tui/internal/data"
-	"github.com/ctcac00/monitor-tui/pkg/collectors"
-	"github.com/ctcac00/monitor-tui/pkg/config"
-	"github.com/ctcac00/monitor-tui/pkg/ui"
+	"github.com/ctcac00/metrics-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/pkg/collectors"
+	"github.com/ctcac00/metrics-tui/pkg/config"
+	"github.com/ctcac00/metrics-tui/pkg/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,9 +20,9 @@ var appConfig *config.Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "monitor-tui",
+	Use:   "metrics-tui",
 	Short: "A real-time terminal UI for hardware monitoring",
-	Long: `monitor-tui displays real-time system metrics including CPU, memory,
+	Long: `metrics-tui displays real-time system metrics including CPU, memory,
 disk, network, temperatures, and more in a terminal-based dashboard.
 
 Built with Bubble Tea for a beautiful, responsive TUI experience.`,
@@ -67,7 +67,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Flag: config file
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/monitor-tui/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/metrics-tui/config.yaml)")
 
 	// Flag: refresh interval
 	rootCmd.PersistentFlags().StringP("refresh", "r", "2s", "Override refresh interval")
@@ -107,7 +107,7 @@ func initConfig() {
 		cobra.CheckErr(err)
 
 		// Search config in home directory
-		viper.AddConfigPath(home+"/.config/monitor-tui")
+		viper.AddConfigPath(home+"/.config/metrics-tui")
 		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")

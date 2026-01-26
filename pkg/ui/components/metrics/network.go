@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ctcac00/monitor-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/internal/data"
 )
 
 // NetworkMetrics renders network metrics

@@ -1,4 +1,4 @@
-module github.com/ctcac00/monitor-tui
+module github.com/ctcac00/metrics-tui
 
 go 1.25.5
 

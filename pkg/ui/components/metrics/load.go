@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ctcac00/monitor-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/internal/data"
 )
 
 // LoadMetrics renders load average metrics

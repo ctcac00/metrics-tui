@@ -3,8 +3,8 @@ package config
 // This file contains default values documentation
 
 // Default configuration file location:
-// Linux/macOS: ~/.config/monitor-tui/config.yaml
-// Windows: %APPDATA%\monitor-tui\config.yaml
+// Linux/macOS: ~/.config/metrics-tui/config.yaml
+// Windows: %APPDATA%\metrics-tui\config.yaml
 
 /*
 Example config.yaml:

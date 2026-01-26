@@ -126,7 +126,7 @@ func Load() (*Config, error) {
 	// Read config file if it exists
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME/.config/monitor-tui")
+	viper.AddConfigPath("$HOME/.config/metrics-tui")
 	viper.AddConfigPath(".")
 
 	// Allow environment variables with prefix

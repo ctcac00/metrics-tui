@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ctcac00/monitor-tui/internal/data"
-	"github.com/ctcac00/monitor-tui/pkg/ui/components"
+	"github.com/ctcac00/metrics-tui/internal/data"
+	"github.com/ctcac00/metrics-tui/pkg/ui/components"
 )
 
 // DiskMetrics renders disk metrics
