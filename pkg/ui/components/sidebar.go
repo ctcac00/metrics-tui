@@ -39,7 +39,6 @@ func NewSidebar() *Sidebar {
 			{Name: "DISK", Number: 3},
 			{Name: "NET", Number: 4},
 			{Name: "TEMP", Number: 5},
-			{Name: "LOAD", Number: 6},
 		},
 		activeTab: 0,
 	}

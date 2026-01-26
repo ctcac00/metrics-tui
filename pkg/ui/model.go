@@ -31,7 +31,6 @@ type Model struct {
 	diskMetrics    *metrics.DiskMetrics
 	networkMetrics *metrics.NetworkMetrics
 	tempMetrics    *metrics.TemperatureMetrics
-	loadMetrics    *metrics.LoadMetrics
 	processList    *components.ProcessList
 	alertBar       *components.AlertBar
 	alertManager   *components.AlertManager
@@ -59,7 +58,6 @@ func NewModel() *Model {
 	m.diskMetrics = metrics.NewDiskMetrics()
 	m.networkMetrics = metrics.NewNetworkMetrics()
 	m.tempMetrics = metrics.NewTemperatureMetrics()
-	m.loadMetrics = metrics.NewLoadMetrics()
 	m.processList = components.NewProcessList()
 	m.alertManager = components.NewAlertManager()
 	m.alertBar = components.NewAlertBar(m.alertManager)
@@ -93,7 +91,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.aggregator.Stop()
 			return m, tea.Quit
 
-		case "1", "2", "3", "4", "5", "6":
+		case "1", "2", "3", "4", "5":
 			tabNum := int(msg.String()[0]) - '1'
 			m.activeTab = tabNum
 			m.sidebar.SetActiveTab(tabNum)
@@ -147,7 +145,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.diskMetrics.SetWidth(msg.Width - 12)
 		m.networkMetrics.SetWidth(msg.Width - 12)
 		m.tempMetrics.SetWidth(msg.Width - 12)
-		m.loadMetrics.SetWidth(msg.Width - 12)
 		m.processList.SetWidth(msg.Width - 12)
 		m.alertBar.SetWidth(msg.Width)
 
@@ -228,8 +225,6 @@ func (m *Model) renderMainContent() string {
 		return m.networkMetrics.Render(m.systemData)
 	case 4:
 		return m.tempMetrics.Render(m.systemData)
-	case 5:
-		return m.loadMetrics.Render(m.systemData)
 	default:
 		return "Invalid tab"
 	}
