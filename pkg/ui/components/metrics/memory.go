@@ -47,7 +47,11 @@ func NewMemoryMetrics() *MemoryMetrics {
 func (m *MemoryMetrics) SetWidth(w int) {
 	m.width = w
 	m.progressBar.SetWidth(30)
-	m.sparkline.SetWidth(w - 20)
+	sparkWidth := w - 24
+	if sparkWidth < 10 {
+		sparkWidth = 10
+	}
+	m.sparkline.SetWidth(sparkWidth)
 }
 
 // SetHistory sets the historical data for sparklines

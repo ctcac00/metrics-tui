@@ -41,6 +41,9 @@ func (s *SparkLine) SetHeight(h int) {
 // SetData sets the data points to display
 func (s *SparkLine) SetData(data []float64) {
 	s.data = data
+	if len(s.data) > s.width {
+		s.data = s.data[len(s.data)-s.width:]
+	}
 }
 
 // SetStyle sets the rendering style
@@ -77,6 +80,13 @@ func (s *SparkLine) Render() string {
 	}
 
 	var result strings.Builder
+
+	// Left-pad with spaces to maintain fixed width when data is short
+	padding := s.width - len(data)
+	if padding > 0 {
+		result.WriteString(strings.Repeat(" ", padding))
+	}
+
 	for _, value := range data {
 		// Normalize to 0-1
 		normalized := (value - min) / rangeVal
@@ -121,8 +131,15 @@ func (s *SparkLine) RenderMultiLine() string {
 
 	// Build each line from top to bottom
 	var lines []string
+	padding := s.width - len(data)
 	for row := s.height - 1; row >= 0; row-- {
 		var line strings.Builder
+
+		// Left-pad with spaces to maintain fixed width when data is short
+		if padding > 0 {
+			line.WriteString(strings.Repeat(" ", padding))
+		}
+
 		for _, value := range data {
 			// Normalize to 0-1
 			normalized := (value - min) / rangeVal

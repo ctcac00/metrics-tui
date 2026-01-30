@@ -50,7 +50,11 @@ func NewCPUMetrics() *CPUMetrics {
 func (c *CPUMetrics) SetWidth(w int) {
 	c.width = w
 	c.progressBar.SetWidth(30)
-	c.sparkline.SetWidth(w - 20)
+	sparkWidth := w - 24
+	if sparkWidth < 10 {
+		sparkWidth = 10
+	}
+	c.sparkline.SetWidth(sparkWidth)
 }
 
 // SetHistory sets the historical data for sparklines
