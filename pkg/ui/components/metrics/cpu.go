@@ -10,17 +10,21 @@ import (
 )
 
 // CPUMetrics renders CPU metrics
+// visibleCores determines how many cores to show at once (scrolling supported)
 type CPUMetrics struct {
-	sectionTitle lipgloss.Style
-	label        lipgloss.Style
-	value        lipgloss.Style
-	muted        lipgloss.Style
-	normal       lipgloss.Style
-	warning      lipgloss.Style
-	critical     lipgloss.Style
-	width        int
-	progressBar  *components.ProgressBar
-	sparkline    *components.SparkLine
+	sectionTitle  lipgloss.Style
+	label         lipgloss.Style
+	value         lipgloss.Style
+	muted         lipgloss.Style
+	normal        lipgloss.Style
+	warning       lipgloss.Style
+	critical      lipgloss.Style
+	width         int
+	progressBar   *components.ProgressBar
+	sparkline     *components.SparkLine
+	scrollOffset  int
+	visibleCores  int
+	totalCoreRows int
 }
 
 // NewCPUMetrics creates a new CPU metrics renderer
@@ -43,6 +47,8 @@ func NewCPUMetrics() *CPUMetrics {
 		critical:     lipgloss.NewStyle().Foreground(colorRed).Bold(true),
 		progressBar:  components.NewProgressBar(),
 		sparkline:    components.NewSparkLine(),
+		scrollOffset: 0,
+		visibleCores: 16, // Show 16 cores at a time (8 rows of 2)
 	}
 }
 
@@ -60,6 +66,49 @@ func (c *CPUMetrics) SetWidth(w int) {
 // SetHistory sets the historical data for sparklines
 func (c *CPUMetrics) SetHistory(data []float64) {
 	c.sparkline.SetData(data)
+}
+
+// ScrollUp scrolls up through the cores
+func (c *CPUMetrics) ScrollUp() {
+	if c.scrollOffset > 0 {
+		c.scrollOffset -= 2 // Move up 2 cores at a time
+		if c.scrollOffset < 0 {
+			c.scrollOffset = 0
+		}
+	}
+}
+
+// ScrollDown scrolls down through the cores
+func (c *CPUMetrics) ScrollDown() {
+	maxOffset := c.totalCoreRows - c.visibleCores
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if c.scrollOffset < maxOffset {
+		c.scrollOffset += 2 // Move down 2 cores at a time
+		if c.scrollOffset > maxOffset {
+			c.scrollOffset = maxOffset
+		}
+	}
+}
+
+// CanScrollUp returns true if can scroll up
+func (c *CPUMetrics) CanScrollUp() bool {
+	return c.scrollOffset > 0
+}
+
+// CanScrollDown returns true if can scroll down
+func (c *CPUMetrics) CanScrollDown() bool {
+	maxOffset := c.totalCoreRows - c.visibleCores
+	if maxOffset < 0 {
+		return false
+	}
+	return c.scrollOffset < maxOffset
+}
+
+// ResetScroll resets scroll position to top
+func (c *CPUMetrics) ResetScroll() {
+	c.scrollOffset = 0
 }
 
 // Render returns the rendered CPU metrics
@@ -101,17 +150,34 @@ func (c *CPUMetrics) Render(systemData *data.SystemData) string {
 	b.WriteString(c.muted.Render(fmt.Sprintf("Cores: %d", cpu.CoreCount)))
 	b.WriteString("\n\n")
 
-	// Per-core usage with progress bars
+	// Per-core usage with progress bars (scrollable)
 	if len(cpu.Usage) > 0 {
+		c.totalCoreRows = len(cpu.Usage)
+
+		// Calculate how many cores to show
+		coresToShow := c.visibleCores
+		if coresToShow > len(cpu.Usage) {
+			coresToShow = len(cpu.Usage)
+		}
+
+		// Add scroll indicator at top if needed
+		if c.CanScrollUp() {
+			upArrow := lipgloss.NewStyle().Foreground(lipgloss.Color("#bd93f9")).Bold(true).Render("▲")
+			b.WriteString(fmt.Sprintf("%s %s\n", upArrow, c.muted.Render("Scroll up for more")))
+		}
+
 		b.WriteString(c.label.Render("Per-Core Usage:"))
 		b.WriteString("\n")
 
 		coresPerRow := 2
-		for i, usage := range cpu.Usage {
-			if i > 0 && i%coresPerRow == 0 {
+		visibleCount := 0
+
+		for i := c.scrollOffset; i < len(cpu.Usage) && visibleCount < coresToShow; i++ {
+			if visibleCount > 0 && visibleCount%coresPerRow == 0 {
 				b.WriteString("\n")
 			}
 
+			usage := cpu.Usage[i]
 			coreStyle := c.getMetricStyle(usage, 70, 90)
 			c.progressBar.SetWidth(15)
 			bar := c.progressBar.RenderDynamic(usage, 70, 90)
@@ -123,6 +189,14 @@ func (c *CPUMetrics) Render(systemData *data.SystemData) string {
 				usage,
 				bar,
 			))
+
+			visibleCount++
+		}
+
+		// Add scroll indicator at bottom if needed
+		if c.CanScrollDown() {
+			downArrow := lipgloss.NewStyle().Foreground(lipgloss.Color("#bd93f9")).Bold(true).Render("▼")
+			b.WriteString(fmt.Sprintf("\n%s %s", downArrow, c.muted.Render("Scroll down for more")))
 		}
 	}
 

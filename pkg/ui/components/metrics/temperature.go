@@ -11,13 +11,14 @@ import (
 
 // TemperatureMetrics renders temperature metrics
 type TemperatureMetrics struct {
-	label    lipgloss.Style
-	value    lipgloss.Style
-	muted    lipgloss.Style
-	normal   lipgloss.Style
-	warning  lipgloss.Style
-	critical lipgloss.Style
-	width    int
+	label        lipgloss.Style
+	value        lipgloss.Style
+	muted        lipgloss.Style
+	normal       lipgloss.Style
+	warning      lipgloss.Style
+	critical     lipgloss.Style
+	width        int
+	targetHeight int
 }
 
 // NewTemperatureMetrics creates a new temperature metrics renderer
@@ -30,12 +31,13 @@ func NewTemperatureMetrics() *TemperatureMetrics {
 	var colorRed = lipgloss.Color("#ff5555")
 
 	return &TemperatureMetrics{
-		label:    lipgloss.NewStyle().Foreground(colorCyan),
-		value:    lipgloss.NewStyle().Foreground(colorForeground),
-		muted:    lipgloss.NewStyle().Foreground(colorComment),
-		normal:   lipgloss.NewStyle().Foreground(colorGreen),
-		warning:  lipgloss.NewStyle().Foreground(colorOrange),
-		critical: lipgloss.NewStyle().Foreground(colorRed).Bold(true),
+		label:        lipgloss.NewStyle().Foreground(colorCyan),
+		value:        lipgloss.NewStyle().Foreground(colorForeground),
+		muted:        lipgloss.NewStyle().Foreground(colorComment),
+		normal:       lipgloss.NewStyle().Foreground(colorGreen),
+		warning:      lipgloss.NewStyle().Foreground(colorOrange),
+		critical:     lipgloss.NewStyle().Foreground(colorRed).Bold(true),
+		targetHeight: 0,
 	}
 }
 
@@ -44,10 +46,16 @@ func (t *TemperatureMetrics) SetWidth(w int) {
 	t.width = w
 }
 
+// SetHeight sets the target height for padding
+func (t *TemperatureMetrics) SetHeight(h int) {
+	t.targetHeight = h
+}
+
 // Render returns the rendered temperature metrics
 func (t *TemperatureMetrics) Render(systemData *data.SystemData) string {
 	if systemData == nil || systemData.Sensors == nil {
-		return t.muted.Render("Loading temperature data...")
+		result := t.muted.Render("Loading temperature data...")
+		return t.padToHeight(result)
 	}
 
 	sensors := systemData.Sensors
@@ -75,7 +83,8 @@ func (t *TemperatureMetrics) Render(systemData *data.SystemData) string {
 	}
 
 	if len(sensors.Temperatures) == 0 {
-		return t.muted.Render("No temperature sensors found")
+		result := t.muted.Render("No temperature sensors found")
+		return t.padToHeight(result)
 	}
 
 	// Group temperatures by sensor type and select representative temps
@@ -105,7 +114,25 @@ func (t *TemperatureMetrics) Render(systemData *data.SystemData) string {
 		}
 	}
 
-	return content.String()
+	return t.padToHeight(content.String())
+}
+
+// padToHeight pads the content with blank lines to reach target height
+func (t *TemperatureMetrics) padToHeight(content string) string {
+	if t.targetHeight <= 0 {
+		return content
+	}
+
+	lines := strings.Split(content, "\n")
+	currentHeight := len(lines)
+
+	// Pad with empty lines to reach target height
+	for currentHeight < t.targetHeight {
+		content += "\n"
+		currentHeight++
+	}
+
+	return content
 }
 
 // renderSummaryTemp shows only the max temperature for a sensor type

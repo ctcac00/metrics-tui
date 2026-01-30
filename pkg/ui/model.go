@@ -12,12 +12,12 @@ import (
 
 // Model is the main Bubble Tea model for the TUI
 type Model struct {
-	width          int
-	height         int
-	quitting       bool
-	showHelp       bool
-	systemData     *data.SystemData
-	history        *data.HistoryData
+	width      int
+	height     int
+	quitting   bool
+	showHelp   bool
+	systemData *data.SystemData
+	history    *data.HistoryData
 
 	// Components
 	header       *components.Header
@@ -101,6 +101,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				snapshotMgr.SaveToFile(snapshot, "")
 			}
 			return m, nil
+
+		case "up", "k":
+			// Scroll CPU cores up
+			m.dashboard.ScrollUpCPU()
+			return m, nil
+
+		case "down", "j":
+			// Scroll CPU cores down
+			m.dashboard.ScrollDownCPU()
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -110,7 +120,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.header.SetWidth(msg.Width)
 		m.footer.SetWidth(msg.Width)
 		m.help.SetSize(msg.Width, msg.Height)
-		m.dashboard.SetWidth(msg.Width - 4) // Leave padding
+		m.dashboard.SetWidth(msg.Width - 4)   // Leave padding
 		m.dashboard.SetHeight(msg.Height - 4) // Leave room for header and footer
 		m.alertBar.SetWidth(msg.Width)
 

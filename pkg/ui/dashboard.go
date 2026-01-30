@@ -10,9 +10,9 @@ import (
 
 // Dashboard renders a consolidated view of all metrics
 type Dashboard struct {
-	border        lipgloss.Style
-	width         int
-	height        int
+	border lipgloss.Style
+	width  int
+	height int
 
 	// Metric components (reuse existing components with all their graphics)
 	cpuMetrics     *metrics.CPUMetrics
@@ -56,17 +56,50 @@ func (d *Dashboard) SetHistory(cpuHistory, memHistory []float64) {
 	d.memoryMetrics.SetHistory(memHistory)
 }
 
+// ScrollUpCPU scrolls the CPU core list up
+func (d *Dashboard) ScrollUpCPU() {
+	d.cpuMetrics.ScrollUp()
+}
+
+// ScrollDownCPU scrolls the CPU core list down
+func (d *Dashboard) ScrollDownCPU() {
+	d.cpuMetrics.ScrollDown()
+}
+
+// CanScrollUpCPU returns true if CPU core list can scroll up
+func (d *Dashboard) CanScrollUpCPU() bool {
+	return d.cpuMetrics.CanScrollUp()
+}
+
+// CanScrollDownCPU returns true if CPU core list can scroll down
+func (d *Dashboard) CanScrollDownCPU() bool {
+	return d.cpuMetrics.CanScrollDown()
+}
+
 // Render returns the rendered dashboard
 func (d *Dashboard) Render(systemData *data.SystemData) string {
 	if systemData == nil {
 		return "Loading system data..."
 	}
 
-	// Get rendered content from each metrics component
-	cpuContent := d.cpuMetrics.Render(systemData)
+	// First, render Memory and Network to determine their combined height
+	// These don't need padding, so we render them first
 	memContent := d.memoryMetrics.Render(systemData)
 	netContent := d.networkMetrics.Render(systemData)
+
+	// Calculate the combined height of column 3 (Memory + Network)
+	memLines := len(strings.Split(memContent, "\n"))
+	netLines := len(strings.Split(netContent, "\n"))
+	col3ContentHeight := memLines + netLines + 2 // +2 for spacing between panels
+
+	// Set target height for Temperature to match column 3
+	d.tempMetrics.SetHeight(col3ContentHeight)
+
+	// Now render Temperature with padding to match
 	tempContent := d.tempMetrics.Render(systemData)
+
+	// CPU content - render last as it scrolls independently
+	cpuContent := d.cpuMetrics.Render(systemData)
 
 	// Wrap each in a bordered panel
 	cpuPanel := d.wrapInBox("CPU", cpuContent)

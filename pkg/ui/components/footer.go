@@ -28,6 +28,6 @@ func (f *Footer) SetWidth(w int) {
 
 // Render returns the rendered footer
 func (f *Footer) Render() string {
-	help := "[q] quit [h] help [s] snapshot"
+	help := "[q] quit [h] help [s] snapshot [↑/↓] scroll"
 	return f.footerStyle.Width(f.width).Render(help)
 }
